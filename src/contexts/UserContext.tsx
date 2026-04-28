@@ -2,10 +2,34 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { supabase } from "@/lib/supabase";
 import type { AppUser } from "@/types/db";
 
+const PREVIEW_USER: AppUser = {
+  id: "preview-gestor",
+  nome: "Gestor Prime House",
+  email: "preview@primehouse.com.br",
+  role: "gestor",
+  pontuacao: 1840,
+  ativo: true,
+  posicao_fila: 1,
+};
+
+const PREVIEW_MODE_KEY = "prime-house-preview-mode";
+
+function isPreviewMode() {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem(PREVIEW_MODE_KEY) === "true";
+}
+
+function setPreviewMode(enabled: boolean) {
+  if (typeof window === "undefined") return;
+  if (enabled) window.localStorage.setItem(PREVIEW_MODE_KEY, "true");
+  else window.localStorage.removeItem(PREVIEW_MODE_KEY);
+}
+
 interface UserContextValue {
   loading: boolean;
   user: AppUser | null;
   refresh: () => Promise<void>;
+  enterPreview: () => void;
   signOut: () => Promise<void>;
 }
 
@@ -30,6 +54,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
 
   const sync = async () => {
+    if (isPreviewMode()) {
+      setUser(PREVIEW_USER);
+      setLoading(false);
+      return;
+    }
     const { data } = await supabase.auth.getSession();
     const email = data.session?.user.email;
     if (!email) {
@@ -61,7 +90,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
     loading,
     user,
     refresh: sync,
+    enterPreview: () => {
+      setPreviewMode(true);
+      setUser(PREVIEW_USER);
+      setLoading(false);
+    },
     signOut: async () => {
+      setPreviewMode(false);
       await supabase.auth.signOut();
       setUser(null);
     },
