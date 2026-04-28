@@ -36,11 +36,7 @@ interface UserContextValue {
 const UserContext = createContext<UserContextValue | undefined>(undefined);
 
 async function loadAppUser(email: string): Promise<AppUser | null> {
-  const { data, error } = await supabase
-    .from("users")
-    .select("*")
-    .eq("email", email)
-    .maybeSingle();
+  const { data, error } = await supabase.from("users").select("*").eq("email", email).maybeSingle();
   if (error) {
     // eslint-disable-next-line no-console
     console.error("Falha ao carregar usuário:", error.message);

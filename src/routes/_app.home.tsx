@@ -129,9 +129,7 @@ function HomePage() {
       (vendas ?? []).forEach((v: { corretor_id: string | null }) => {
         if (v.corretor_id) counts.set(v.corretor_id, (counts.get(v.corretor_id) ?? 0) + 1);
       });
-      setRanking(
-        (users as AppUser[]).map((u) => ({ ...u, vendas: counts.get(u.id) ?? 0 })),
-      );
+      setRanking((users as AppUser[]).map((u) => ({ ...u, vendas: counts.get(u.id) ?? 0 })));
     }
 
     async function loadMeta() {
@@ -186,12 +184,7 @@ function HomePage() {
 
       {/* Stats */}
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          icon={Users}
-          label="Leads ativos"
-          value={stats?.leadsAtivos}
-          loading={!stats}
-        />
+        <StatCard icon={Users} label="Leads ativos" value={stats?.leadsAtivos} loading={!stats} />
         <StatCard
           icon={TrendingUp}
           label="Vendas no mês"
@@ -277,9 +270,7 @@ function HomePage() {
                   key={c.id}
                   className={cn(
                     "flex items-center gap-4 rounded-lg border px-4 py-3 transition",
-                    isFirst
-                      ? "border-primary/40 bg-primary/10"
-                      : "border-border bg-background/40",
+                    isFirst ? "border-primary/40 bg-primary/10" : "border-border bg-background/40",
                     isMe && "ring-2 ring-primary/60",
                   )}
                 >
