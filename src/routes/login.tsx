@@ -11,10 +11,16 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { refresh } = useUser();
+  const { refresh, enterPreview } = useUser();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
+
+  function handlePreviewAccess() {
+    enterPreview();
+    toast.success("Acesso de visualização liberado.");
+    navigate({ to: "/home" });
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -89,6 +95,13 @@ function LoginPage() {
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               Entrar
+            </button>
+            <button
+              type="button"
+              onClick={handlePreviewAccess}
+              className="inline-flex w-full items-center justify-center rounded-lg border border-border bg-secondary px-4 py-2.5 text-sm font-semibold text-secondary-foreground transition hover:bg-accent"
+            >
+              Ver dashboard agora
             </button>
           </div>
         </form>
