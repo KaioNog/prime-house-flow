@@ -18,6 +18,39 @@ interface Stats {
   tarefasPendentes: number;
 }
 
+const PREVIEW_RANKING: Array<AppUser & { vendas: number }> = [
+  {
+    id: "preview-gestor",
+    nome: "Gestor Prime House",
+    email: "preview@primehouse.com.br",
+    role: "gestor",
+    pontuacao: 1840,
+    ativo: true,
+    posicao_fila: 1,
+    vendas: 7,
+  },
+  {
+    id: "preview-corretor-1",
+    nome: "Marina Alves",
+    email: "marina@primehouse.com.br",
+    role: "corretor",
+    pontuacao: 1510,
+    ativo: true,
+    posicao_fila: 2,
+    vendas: 5,
+  },
+  {
+    id: "preview-corretor-2",
+    nome: "Rafael Santos",
+    email: "rafael@primehouse.com.br",
+    role: "corretor",
+    pontuacao: 1220,
+    ativo: true,
+    posicao_fila: 3,
+    vendas: 4,
+  },
+];
+
 function HomePage() {
   const { user } = useUser();
   const [stats, setStats] = useState<Stats | null>(null);
@@ -26,6 +59,13 @@ function HomePage() {
 
   useEffect(() => {
     if (!user) return;
+    if (user.id.startsWith("preview-")) {
+      setStats({ leadsAtivos: 18, vendasMes: 7, comissaoMes: 42600, tarefasPendentes: 9 });
+      setRanking(PREVIEW_RANKING);
+      setMeta({ atual: 16, alvo: 30 });
+      return;
+    }
+
     const inicio = startOfMonthISO();
     const fim = endOfMonthISO();
 
@@ -89,9 +129,7 @@ function HomePage() {
       (vendas ?? []).forEach((v: { corretor_id: string | null }) => {
         if (v.corretor_id) counts.set(v.corretor_id, (counts.get(v.corretor_id) ?? 0) + 1);
       });
-      setRanking(
-        (users as AppUser[]).map((u) => ({ ...u, vendas: counts.get(u.id) ?? 0 })),
-      );
+      setRanking((users as AppUser[]).map((u) => ({ ...u, vendas: counts.get(u.id) ?? 0 })));
     }
 
     async function loadMeta() {
@@ -146,12 +184,7 @@ function HomePage() {
 
       {/* Stats */}
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          icon={Users}
-          label="Leads ativos"
-          value={stats?.leadsAtivos}
-          loading={!stats}
-        />
+        <StatCard icon={Users} label="Leads ativos" value={stats?.leadsAtivos} loading={!stats} />
         <StatCard
           icon={TrendingUp}
           label="Vendas no mês"
@@ -237,9 +270,7 @@ function HomePage() {
                   key={c.id}
                   className={cn(
                     "flex items-center gap-4 rounded-lg border px-4 py-3 transition",
-                    isFirst
-                      ? "border-primary/40 bg-primary/10"
-                      : "border-border bg-background/40",
+                    isFirst ? "border-primary/40 bg-primary/10" : "border-border bg-background/40",
                     isMe && "ring-2 ring-primary/60",
                   )}
                 >
