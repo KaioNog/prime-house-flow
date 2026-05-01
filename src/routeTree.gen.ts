@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppHomeRouteImport } from './routes/_app.home'
+import { Route as AppEmpreendimentosRouteImport } from './routes/_app.empreendimentos'
 import { Route as AppCrmRouteImport } from './routes/_app.crm'
 import { Route as AppConfigRouteImport } from './routes/_app.config'
 
@@ -35,6 +36,11 @@ const AppHomeRoute = AppHomeRouteImport.update({
   path: '/home',
   getParentRoute: () => AppRoute,
 } as any)
+const AppEmpreendimentosRoute = AppEmpreendimentosRouteImport.update({
+  id: '/empreendimentos',
+  path: '/empreendimentos',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCrmRoute = AppCrmRouteImport.update({
   id: '/crm',
   path: '/crm',
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/config': typeof AppConfigRoute
   '/crm': typeof AppCrmRoute
+  '/empreendimentos': typeof AppEmpreendimentosRoute
   '/home': typeof AppHomeRoute
 }
 export interface FileRoutesByTo {
@@ -58,6 +65,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/config': typeof AppConfigRoute
   '/crm': typeof AppCrmRoute
+  '/empreendimentos': typeof AppEmpreendimentosRoute
   '/home': typeof AppHomeRoute
 }
 export interface FileRoutesById {
@@ -67,13 +75,14 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/config': typeof AppConfigRoute
   '/_app/crm': typeof AppCrmRoute
+  '/_app/empreendimentos': typeof AppEmpreendimentosRoute
   '/_app/home': typeof AppHomeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/config' | '/crm' | '/home'
+  fullPaths: '/' | '/login' | '/config' | '/crm' | '/empreendimentos' | '/home'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/config' | '/crm' | '/home'
+  to: '/' | '/login' | '/config' | '/crm' | '/empreendimentos' | '/home'
   id:
     | '__root__'
     | '/'
@@ -81,6 +90,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_app/config'
     | '/_app/crm'
+    | '/_app/empreendimentos'
     | '/_app/home'
   fileRoutesById: FileRoutesById
 }
@@ -120,6 +130,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppHomeRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/empreendimentos': {
+      id: '/_app/empreendimentos'
+      path: '/empreendimentos'
+      fullPath: '/empreendimentos'
+      preLoaderRoute: typeof AppEmpreendimentosRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/crm': {
       id: '/_app/crm'
       path: '/crm'
@@ -140,12 +157,14 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppConfigRoute: typeof AppConfigRoute
   AppCrmRoute: typeof AppCrmRoute
+  AppEmpreendimentosRoute: typeof AppEmpreendimentosRoute
   AppHomeRoute: typeof AppHomeRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppConfigRoute: AppConfigRoute,
   AppCrmRoute: AppCrmRoute,
+  AppEmpreendimentosRoute: AppEmpreendimentosRoute,
   AppHomeRoute: AppHomeRoute,
 }
 
