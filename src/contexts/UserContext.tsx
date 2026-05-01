@@ -106,13 +106,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
     loading,
     user,
     refresh: sync,
-    enterPreview: () => {
-      setPreviewMode(true);
-      setUser(PREVIEW_USER);
+    enterPreview: (role: "gestor" | "corretor" = "gestor") => {
+      setPreviewMode(role);
+      setUser(PREVIEW_USERS[role]);
       setLoading(false);
     },
     signOut: async () => {
-      setPreviewMode(false);
+      setPreviewMode(null);
       await supabase.auth.signOut();
       setUser(null);
     },
