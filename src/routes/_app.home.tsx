@@ -21,7 +21,7 @@ interface Stats {
 const PREVIEW_RANKING: Array<AppUser & { vendas: number }> = [
   {
     id: "preview-gestor",
-    nome: "Gestor Prime House",
+    nome: "Kairos",
     email: "preview@primehouse.com.br",
     role: "gestor",
     pontuacao: 1840,
@@ -31,7 +31,7 @@ const PREVIEW_RANKING: Array<AppUser & { vendas: number }> = [
   },
   {
     id: "preview-corretor-1",
-    nome: "Marina Alves",
+    nome: "Moreno",
     email: "marina@primehouse.com.br",
     role: "corretor",
     pontuacao: 1510,
@@ -41,7 +41,7 @@ const PREVIEW_RANKING: Array<AppUser & { vendas: number }> = [
   },
   {
     id: "preview-corretor-2",
-    nome: "Rafael Santos",
+    nome: "Alquimista",
     email: "rafael@primehouse.com.br",
     role: "corretor",
     pontuacao: 1220,

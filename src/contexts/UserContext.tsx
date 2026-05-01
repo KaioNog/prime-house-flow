@@ -5,7 +5,7 @@ import type { AppUser } from "@/types/db";
 const PREVIEW_USERS: Record<"gestor" | "corretor", AppUser> = {
   gestor: {
     id: "preview-gestor",
-    nome: "Gestor Prime House",
+    nome: "Kairos",
     email: "preview@primehouse.com.br",
     role: "gestor",
     pontuacao: 1840,
@@ -14,7 +14,7 @@ const PREVIEW_USERS: Record<"gestor" | "corretor", AppUser> = {
   },
   corretor: {
     id: "preview-corretor-1",
-    nome: "Marina Alves",
+    nome: "Moreno",
     email: "marina@primehouse.com.br",
     role: "corretor",
     pontuacao: 1510,
