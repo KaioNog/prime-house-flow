@@ -69,8 +69,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
 
   const sync = async () => {
-    if (isPreviewMode()) {
-      setUser(PREVIEW_USER);
+    const previewRole = getPreviewRole();
+    if (previewRole) {
+      setUser(PREVIEW_USERS[previewRole]);
       setLoading(false);
       return;
     }
