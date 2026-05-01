@@ -60,7 +60,11 @@ function HomePage() {
   useEffect(() => {
     if (!user) return;
     if (user.id.startsWith("preview-")) {
-      setStats({ leadsAtivos: 18, vendasMes: 7, comissaoMes: 42600, tarefasPendentes: 9 });
+      if (user.role === "corretor") {
+        setStats({ leadsAtivos: 6, vendasMes: 5, comissaoMes: 18400, tarefasPendentes: 3 });
+      } else {
+        setStats({ leadsAtivos: 18, vendasMes: 7, comissaoMes: 42600, tarefasPendentes: 9 });
+      }
       setRanking(PREVIEW_RANKING);
       setMeta({ atual: 16, alvo: 30 });
       return;
