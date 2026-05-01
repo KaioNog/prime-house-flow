@@ -1,12 +1,18 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useState } from "react";
-import { Home, Kanban, Settings, LogOut, Menu, X } from "lucide-react";
+import { Home, Kanban, Building2, Settings, LogOut, Menu, X } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
 
 const items = [
   { to: "/home", label: "Home", icon: Home, roles: ["corretor", "gestor"] as const },
   { to: "/crm", label: "CRM", icon: Kanban, roles: ["corretor", "gestor"] as const },
+  {
+    to: "/empreendimentos",
+    label: "Empreendimentos",
+    icon: Building2,
+    roles: ["corretor", "gestor"] as const,
+  },
   { to: "/config", label: "Configurações", icon: Settings, roles: ["gestor"] as const },
 ];
 

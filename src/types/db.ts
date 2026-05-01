@@ -22,7 +22,7 @@ export type LeadStatus =
   | "canetado"
   | "perdido";
 
-export type LeadOrigem = "meta_ads" | "indicacao" | "offline" | "outro";
+export type LeadOrigem = "meta_ads" | "site" | "indicacao" | "panfleto" | "cartaz";
 
 export interface Lead {
   id: string;
@@ -32,17 +32,35 @@ export interface Lead {
   status: LeadStatus | string;
   corretor_id: string | null;
   empreendimento_id: string | null;
+  numero_unidade?: string | null;
   conversa_resumo?: string | null;
+  anotacoes?: string | null;
   created_at: string;
   updated_at?: string;
 }
 
+export type EmpreendimentoStatus = "ativo" | "em_breve" | "inativo";
+export type VagaTipo = "carro" | "moto" | "sem_vaga";
+
 export interface Empreendimento {
   id: string;
   nome: string;
-  endereco?: string | null;
+  descricao?: string | null;
+  localizacao?: string | null;
+  num_dorms?: number | null;
+  prazo_entrega?: string | null;
+  metragem?: string | null;
+  varanda?: boolean | null;
+  vaga?: VagaTipo | string | null;
+  construtora?: string | null;
   incorporadora?: string | null;
-  status?: string | null;
+  financiamento?: string | null;
+  url_midias?: string | null;
+  foto_url?: string | null;
+  status?: EmpreendimentoStatus | string | null;
+  arquivado?: boolean | null;
+  endereco?: string | null;
+  created_at?: string;
 }
 
 export interface Cliente {
