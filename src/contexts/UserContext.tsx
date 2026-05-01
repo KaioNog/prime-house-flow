@@ -2,34 +2,53 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { supabase } from "@/lib/supabase";
 import type { AppUser } from "@/types/db";
 
-const PREVIEW_USER: AppUser = {
-  id: "preview-gestor",
-  nome: "Gestor Prime House",
-  email: "preview@primehouse.com.br",
-  role: "gestor",
-  pontuacao: 1840,
-  ativo: true,
-  posicao_fila: 1,
+const PREVIEW_USERS: Record<"gestor" | "corretor", AppUser> = {
+  gestor: {
+    id: "preview-gestor",
+    nome: "Gestor Prime House",
+    email: "preview@primehouse.com.br",
+    role: "gestor",
+    pontuacao: 1840,
+    ativo: true,
+    posicao_fila: 1,
+  },
+  corretor: {
+    id: "preview-corretor-1",
+    nome: "Marina Alves",
+    email: "marina@primehouse.com.br",
+    role: "corretor",
+    pontuacao: 1510,
+    ativo: true,
+    posicao_fila: 2,
+  },
 };
 
 const PREVIEW_MODE_KEY = "prime-house-preview-mode";
+const PREVIEW_ROLE_KEY = "prime-house-preview-role";
 
-function isPreviewMode() {
-  if (typeof window === "undefined") return false;
-  return window.localStorage.getItem(PREVIEW_MODE_KEY) === "true";
+function getPreviewRole(): "gestor" | "corretor" | null {
+  if (typeof window === "undefined") return null;
+  if (window.localStorage.getItem(PREVIEW_MODE_KEY) !== "true") return null;
+  const r = window.localStorage.getItem(PREVIEW_ROLE_KEY);
+  return r === "corretor" ? "corretor" : "gestor";
 }
 
-function setPreviewMode(enabled: boolean) {
+function setPreviewMode(role: "gestor" | "corretor" | null) {
   if (typeof window === "undefined") return;
-  if (enabled) window.localStorage.setItem(PREVIEW_MODE_KEY, "true");
-  else window.localStorage.removeItem(PREVIEW_MODE_KEY);
+  if (role) {
+    window.localStorage.setItem(PREVIEW_MODE_KEY, "true");
+    window.localStorage.setItem(PREVIEW_ROLE_KEY, role);
+  } else {
+    window.localStorage.removeItem(PREVIEW_MODE_KEY);
+    window.localStorage.removeItem(PREVIEW_ROLE_KEY);
+  }
 }
 
 interface UserContextValue {
   loading: boolean;
   user: AppUser | null;
   refresh: () => Promise<void>;
-  enterPreview: () => void;
+  enterPreview: (role?: "gestor" | "corretor") => void;
   signOut: () => Promise<void>;
 }
 
