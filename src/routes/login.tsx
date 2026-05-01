@@ -16,9 +16,9 @@ function LoginPage() {
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
 
-  function handlePreviewAccess() {
-    enterPreview();
-    toast.success("Acesso de visualização liberado.");
+  function handlePreviewAccess(role: "gestor" | "corretor") {
+    enterPreview(role);
+    toast.success(`Visualizando como ${role === "gestor" ? "gestor" : "corretor"}.`);
     navigate({ to: "/home" });
   }
 
