@@ -98,10 +98,17 @@ function LoginPage() {
             </button>
             <button
               type="button"
-              onClick={handlePreviewAccess}
+              onClick={() => handlePreviewAccess("gestor")}
               className="inline-flex w-full items-center justify-center rounded-lg border border-border bg-secondary px-4 py-2.5 text-sm font-semibold text-secondary-foreground transition hover:bg-accent"
             >
-              Ver dashboard agora
+              Ver dashboard como gestor
+            </button>
+            <button
+              type="button"
+              onClick={() => handlePreviewAccess("corretor")}
+              className="inline-flex w-full items-center justify-center rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-accent"
+            >
+              Ver dashboard como corretor
             </button>
           </div>
         </form>
