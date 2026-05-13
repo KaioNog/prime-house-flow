@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import { Users, TrendingUp, DollarSign, CheckSquare, Trophy, Target } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { supabase } from "@/lib/supabase";
-import { formatBRL, formatDatePtBr, startOfMonthISO, endOfMonthISO } from "@/lib/format";
+import { formatBRL, formatDatePtBr, startOfMonthISO, endOfMonthISO, displayFirstName } from "@/lib/format";
+import { mapUserRowToAppUser } from "@/lib/userRow";
+import { corretorOwnedLeadsOr } from "@/lib/leadScope";
 import { cn } from "@/lib/utils";
 import type { AppUser } from "@/types/db";
 
@@ -74,19 +76,40 @@ function HomePage() {
     const fim = endOfMonthISO();
 
     async function loadStats() {
+      const isCorretor = user!.role === "corretor";
+      const leadOr = isCorretor ? corretorOwnedLeadsOr(user!.id, user!.nome) : null;
+
+      const leadsAtivosQ = leadOr
+        ? supabase
+            .from("leads")
+            .select("id", { count: "exact", head: true })
+            .not("status", "in", "(canetado,perdido)")
+            .or(leadOr)
+        : supabase
+            .from("leads")
+            .select("id", { count: "exact", head: true })
+            .not("status", "in", "(canetado,perdido)")
+            .eq("corretor_id", user!.id);
+
+      const vendasMesQ = leadOr
+        ? supabase
+            .from("leads")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "canetado")
+            .gte("updated_at", inicio)
+            .lt("updated_at", fim)
+            .or(leadOr)
+        : supabase
+            .from("leads")
+            .select("id", { count: "exact", head: true })
+            .eq("corretor_id", user!.id)
+            .eq("status", "canetado")
+            .gte("updated_at", inicio)
+            .lt("updated_at", fim);
+
       const [leadsAtivosRes, vendasRes, tarefasRes, clientesRes] = await Promise.all([
-        supabase
-          .from("leads")
-          .select("id", { count: "exact", head: true })
-          .eq("corretor_id", user!.id)
-          .not("status", "in", "(canetado,perdido)"),
-        supabase
-          .from("leads")
-          .select("id", { count: "exact", head: true })
-          .eq("corretor_id", user!.id)
-          .eq("status", "canetado")
-          .gte("updated_at", inicio)
-          .lt("updated_at", fim),
+        leadsAtivosQ,
+        vendasMesQ,
         supabase
           .from("tarefas")
           .select("id", { count: "exact", head: true })
@@ -133,7 +156,12 @@ function HomePage() {
       (vendas ?? []).forEach((v: { corretor_id: string | null }) => {
         if (v.corretor_id) counts.set(v.corretor_id, (counts.get(v.corretor_id) ?? 0) + 1);
       });
-      setRanking((users as AppUser[]).map((u) => ({ ...u, vendas: counts.get(u.id) ?? 0 })));
+      setRanking(
+        (users ?? []).map((u) => {
+          const row = mapUserRowToAppUser(u);
+          return { ...row, vendas: counts.get(row.id) ?? 0 };
+        }),
+      );
     }
 
     async function loadMeta() {
@@ -180,7 +208,7 @@ function HomePage() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl font-bold text-foreground lg:text-4xl">
-            Olá, <span className="text-gold">{user.nome.split(" ")[0]}</span>
+            Olá, <span className="text-gold">{displayFirstName(user)}</span>
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">{today}</p>
         </div>

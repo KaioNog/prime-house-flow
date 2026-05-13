@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useState } from "react";
-import { Home, Kanban, Building2, Settings, LogOut, Menu, X } from "lucide-react";
+import { Home, Kanban, Building2, Settings, LogOut, Menu, X, Send, Mail } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +14,8 @@ const items = [
     roles: ["corretor", "gestor"] as const,
   },
   { to: "/config", label: "Configurações", icon: Settings, roles: ["gestor"] as const },
+  { to: "/disparos", label: "Disparos", icon: Send, roles: ["gestor"] as const },
+  { to: "/followup", label: "Follow-up", icon: Mail, roles: ["gestor"] as const },
 ];
 
 export function AppSidebar() {

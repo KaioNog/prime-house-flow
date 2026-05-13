@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -21,13 +21,17 @@ import {
   CheckCircle2,
   Circle,
   Trash2,
+  RefreshCw,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
 import { supabase, N8N_WEBHOOK_URL } from "@/lib/supabase";
 import { useUser } from "@/contexts/UserContext";
-import { formatShort, formatWhatsapp, formatBRL } from "@/lib/format";
+import { formatShort, formatWhatsapp, formatBRL, displayFirstName } from "@/lib/format";
+import { mapUserRowToAppUser } from "@/lib/userRow";
+import { corretorOwnedLeadsOr, leadBelongsToCorretor } from "@/lib/leadScope";
 import { cn } from "@/lib/utils";
 import {
   getPreviewEmpreendimentos,
@@ -39,6 +43,13 @@ import {
   savePreviewTarefas,
 } from "@/lib/previewStore";
 import type { Lead, AppUser, Empreendimento, Tarefa } from "@/types/db";
+import { ImportLeadsModal } from "@/components/ImportLeadsModal";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_app/crm")({
   component: CRMPage,
@@ -74,6 +85,13 @@ const ORIGEM_COLORS: Record<string, string> = {
   cartaz: "bg-rose-500/15 text-rose-300 border-rose-500/30",
 };
 
+function leadCorretorDisplay(lead: Lead, corMap: Map<string, string>): string {
+  const n = lead.corretor_nome?.trim();
+  if (n) return n;
+  if (lead.corretor_id) return corMap.get(lead.corretor_id) ?? "—";
+  return "—";
+}
+
 function CRMPage() {
   const { user } = useUser();
   const isPreview = isPreviewId(user?.id);
@@ -85,6 +103,7 @@ function CRMPage() {
   const [filterOrigem, setFilterOrigem] = useState<string>("");
   const [openLead, setOpenLead] = useState<Lead | null>(null);
   const [showNew, setShowNew] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [vendaModal, setVendaModal] = useState<Lead | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
@@ -94,10 +113,8 @@ function CRMPage() {
   );
   const corMap = useMemo(() => new Map(corretores.map((c) => [c.id, c.nome])), [corretores]);
 
-  // Load
-  useEffect(() => {
+  const refetchLeads = useCallback(async () => {
     if (!user) return;
-
     if (isPreview) {
       const allLeads = getPreviewLeads();
       setLeads(
@@ -105,6 +122,23 @@ function CRMPage() {
           ? allLeads.filter((l) => l.corretor_id === user.id)
           : allLeads,
       );
+      return;
+    }
+    let q = supabase.from("leads").select("*").order("created_at", { ascending: false });
+    if (user.role === "corretor") q = q.or(corretorOwnedLeadsOr(user.id, user.nome));
+    const { data, error } = await q;
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.error("Erro ao carregar leads:", error.message);
+    }
+    setLeads((data as Lead[]) ?? []);
+  }, [user, isPreview]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    if (isPreview) {
+      void refetchLeads();
       setEmpreendimentos(getPreviewEmpreendimentos().filter((e) => !e.arquivado));
       setCorretores([
         {
@@ -129,9 +163,7 @@ function CRMPage() {
       return;
     }
 
-    let q = supabase.from("leads").select("*").order("created_at", { ascending: false });
-    if (user.role === "corretor") q = q.eq("corretor_id", user.id);
-    q.then(({ data }) => setLeads((data as Lead[]) ?? []));
+    void refetchLeads();
 
     supabase
       .from("empreendimentos")
@@ -143,7 +175,7 @@ function CRMPage() {
       .select("*")
       .eq("role", "corretor")
       .eq("ativo", true)
-      .then(({ data }) => setCorretores((data as AppUser[]) ?? []));
+      .then(({ data }) => setCorretores((data ?? []).map(mapUserRowToAppUser)));
 
     const ch = supabase
       .channel("leads-realtime")
@@ -156,12 +188,16 @@ function CRMPage() {
             const row = payload.new as Lead;
             const old = payload.old as Lead;
             if (payload.eventType === "INSERT") {
-              if (user.role === "corretor" && row.corretor_id !== user.id) return prev;
+              if (user.role === "corretor" && !leadBelongsToCorretor(row, user)) return prev;
               if (prev.find((l) => l.id === row.id)) return prev;
               return [row, ...prev];
             }
             if (payload.eventType === "UPDATE") {
-              return prev.map((l) => (l.id === row.id ? { ...l, ...row } : l));
+              const merged = prev.map((l) => (l.id === row.id ? { ...l, ...row } : l));
+              if (user.role === "corretor") {
+                return merged.filter((l) => leadBelongsToCorretor(l, user));
+              }
+              return merged;
             }
             if (payload.eventType === "DELETE") {
               return prev.filter((l) => l.id !== old.id);
@@ -174,11 +210,12 @@ function CRMPage() {
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [user, isPreview]);
+  }, [user, isPreview, refetchLeads]);
 
   if (!user) return null;
 
   const filteredLeads = (leads ?? []).filter((l) => {
+    if (user.role === "corretor" && !leadBelongsToCorretor(l, user)) return false;
     if (filterCorretor && l.corretor_id !== filterCorretor) return false;
     if (filterEmp && l.empreendimento_id !== filterEmp) return false;
     if (filterOrigem && l.origem !== filterOrigem) return false;
@@ -233,7 +270,7 @@ function CRMPage() {
           lead_id: lead.id,
           nome: lead.nome,
           whatsapp: lead.whatsapp,
-          corretor: corMap.get(lead.corretor_id ?? "") ?? "",
+          corretor: leadCorretorDisplay(lead, corMap),
           empreendimento: empMap.get(lead.empreendimento_id ?? "") ?? "",
         }),
       }).catch((err) => {
@@ -266,7 +303,7 @@ function CRMPage() {
       String(l.status).replace("_", " "),
       empMap.get(l.empreendimento_id ?? "") ?? "",
       l.numero_unidade ?? "",
-      corMap.get(l.corretor_id ?? "") ?? "",
+      leadCorretorDisplay(l, corMap),
       formatShort(l.created_at),
       (l.conversa_resumo ?? "").replace(/\s+/g, " "),
     ]);
@@ -300,22 +337,56 @@ function CRMPage() {
             CRM <span className="text-gold">Kanban</span>
           </h1>
           <p className="text-sm text-muted-foreground">
-            {filteredLeads.length} lead(s) {user.role === "corretor" && "· seus leads"}
+            {filteredLeads.length} lead(s)
+            {user.role === "corretor" && " · seus leads"}
+            {user.role === "gestor" &&
+              filterCorretor &&
+              ` · ${corretores.find((c) => c.id === filterCorretor)?.nome ?? ""}`}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void refetchLeads()}
+            className="inline-flex items-center gap-2 rounded-xl border border-border px-3.5 py-2 text-sm font-medium text-foreground transition hover:border-primary/40 hover:bg-accent"
+          >
+            <RefreshCw className="h-4 w-4" /> Refresh
+          </button>
           <button
             onClick={exportCsv}
             className="inline-flex items-center gap-2 rounded-xl border border-border px-3.5 py-2 text-sm font-medium text-foreground transition hover:border-primary/40 hover:bg-accent"
           >
             <Download className="h-4 w-4" /> Exportar
           </button>
-          <button
-            onClick={() => setShowNew(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[0_0_24px_rgba(201,168,76,0.25)] hover:bg-[oklch(0.78_0.14_85)]"
-          >
-            <Plus className="h-4 w-4" /> Novo Lead
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-[0_0_24px_rgba(201,168,76,0.25)] hover:bg-[oklch(0.78_0.14_85)]"
+              >
+                <Plus className="h-4 w-4" /> Novo Lead
+                <ChevronDown className="h-4 w-4 opacity-80" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="border-border bg-popover">
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onSelect={() => {
+                  setShowNew(true);
+                }}
+              >
+                Adicionar Lead
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onSelect={() => {
+                  setShowImport(true);
+                }}
+              >
+                Importar Leads
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
@@ -401,6 +472,9 @@ function CRMPage() {
                       key={l.id}
                       lead={l}
                       empreendimentoNome={empMap.get(l.empreendimento_id ?? "") ?? "—"}
+                      corretorLine={
+                        user.role === "gestor" ? leadCorretorDisplay(l, corMap) : undefined
+                      }
                       onClick={() => setOpenLead(l)}
                     />
                   ))
@@ -415,7 +489,7 @@ function CRMPage() {
         <LeadDrawer
           lead={openLead}
           empreendimentos={empreendimentos}
-          corretorNome={corMap.get(openLead.corretor_id ?? "") ?? "—"}
+          corretorNome={leadCorretorDisplay(openLead, corMap)}
           isPreview={isPreview}
           onClose={() => setOpenLead(null)}
           onUpdated={(upd) => {
@@ -452,6 +526,12 @@ function CRMPage() {
           }}
         />
       )}
+
+      <ImportLeadsModal
+        open={showImport}
+        onOpenChange={setShowImport}
+        onSuccess={() => void refetchLeads()}
+      />
     </div>
   );
 }
@@ -493,10 +573,12 @@ function Column({
 function LeadCard({
   lead,
   empreendimentoNome,
+  corretorLine,
   onClick,
 }: {
   lead: Lead;
   empreendimentoNome: string;
+  corretorLine?: string;
   onClick: () => void;
 }) {
   const { setNodeRef, attributes, listeners, transform, isDragging } = useDraggable({
@@ -535,6 +617,9 @@ function LeadCard({
         <MessageCircle className="h-3 w-3" /> {formatWhatsapp(lead.whatsapp)}
       </p>
       <p className="mt-1 truncate text-xs text-muted-foreground">{empreendimentoNome}</p>
+      {corretorLine ? (
+        <p className="mt-1 truncate text-[10px] font-medium text-gold/90">Corretor: {corretorLine}</p>
+      ) : null}
       <div className="mt-2 flex items-center justify-between">
         <span className={cn("rounded-full border px-2 py-0.5 text-[10px] uppercase", tone)}>
           {ORIGEM_LABEL[lead.origem] ?? String(lead.origem)}
@@ -567,7 +652,6 @@ function LeadDrawer({
     [empreendimentos],
   );
   const [resumo, setResumo] = useState(lead.conversa_resumo ?? "");
-  const [anotacoes, setAnotacoes] = useState(lead.anotacoes ?? "");
   const [numeroUnidade, setNumeroUnidade] = useState(lead.numero_unidade ?? "");
   const [tarefas, setTarefas] = useState<Tarefa[]>([]);
   const [novaTarefa, setNovaTarefa] = useState("");
@@ -590,7 +674,6 @@ function LeadDrawer({
     setSaving(true);
     const updates = {
       conversa_resumo: resumo,
-      anotacoes,
       numero_unidade: numeroUnidade || null,
     };
     if (isPreview) {
@@ -721,25 +804,12 @@ function LeadDrawer({
 
           <div>
             <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Resumo da conversa
+              Resumo
             </label>
             <textarea
               value={resumo}
               onChange={(e) => setResumo(e.target.value)}
               rows={4}
-              className="w-full rounded-lg border border-border bg-input/40 p-3 text-sm outline-none focus:border-primary"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Anotações
-            </label>
-            <textarea
-              value={anotacoes}
-              onChange={(e) => setAnotacoes(e.target.value)}
-              rows={4}
-              placeholder="Notas livres sobre o cliente, preferências, próximas ações..."
               className="w-full rounded-lg border border-border bg-input/40 p-3 text-sm outline-none focus:border-primary"
             />
           </div>
@@ -862,12 +932,19 @@ function NewLeadModal({
       return;
     }
     setSaving(true);
+    const corNome =
+      corretorId && corretores.length
+        ? (corretores.find((c) => c.id === corretorId)?.nome?.trim() ?? null)
+        : user?.role === "corretor"
+          ? (user?.nome?.trim() ?? null)
+          : null;
     const base = {
       nome,
       whatsapp,
       origem,
       empreendimento_id: empId || null,
       corretor_id: corretorId || null,
+      corretor_nome: corNome,
       numero_unidade: numeroUnidade || null,
       status: "novo",
     };
@@ -1026,7 +1103,7 @@ function CanetadoModal({
       <div className="absolute inset-0 bg-black/70" onClick={onClose} />
       <div className="relative w-full max-w-md rounded-xl border border-primary/40 bg-card p-6 shadow-2xl">
         <h2 className="text-center font-display text-2xl font-bold text-gold">
-          🎉 Parabéns, {user?.nome.split(" ")[0]}!
+          🎉 Parabéns, {user ? displayFirstName(user) : "você"}!
         </h2>
         <p className="mt-1 text-center text-sm text-muted-foreground">
           Venda fechada — registre os valores

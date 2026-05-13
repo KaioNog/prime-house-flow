@@ -15,9 +15,10 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Loader2, UserPlus, GripVertical, Save, Target, Users as UsersIcon } from "lucide-react";
+import { Loader2, UserPlus, GripVertical, Save, Target, Users as UsersIcon, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { mapUserRowToAppUser, newCorretorRowPayload } from "@/lib/userRow";
 import { useUser } from "@/contexts/UserContext";
 import type { AppUser } from "@/types/db";
 import { cn } from "@/lib/utils";
@@ -94,7 +95,7 @@ function CorretoresSection() {
       .select("*")
       .eq("role", "corretor")
       .order("posicao_fila", { ascending: true });
-    setList((data as AppUser[]) ?? []);
+    setList((data ?? []).map(mapUserRowToAppUser));
   }
   useEffect(() => {
     load();
@@ -110,6 +111,20 @@ function CorretoresSection() {
   async function updateFila(c: AppUser, val: number) {
     const { error } = await supabase.from("users").update({ posicao_fila: val }).eq("id", c.id);
     if (error) return toast.error("Erro ao atualizar.");
+    load();
+  }
+
+  async function removeCorretor(c: AppUser) {
+    const ok = window.confirm(
+      `Excluir "${c.nome}" (${c.email}) do CRM?\n\nOs leads dele ficam sem corretor vinculado. Se for cadastrar o mesmo email de novo, apague também o usuário em Authentication no Supabase.`,
+    );
+    if (!ok) return;
+    const { error } = await supabase.from("users").delete().eq("id", c.id);
+    if (error) {
+      toast.error(`Não foi possível excluir: ${error.message}`);
+      return;
+    }
+    toast.success("Corretor removido do CRM.");
     load();
   }
 
@@ -146,6 +161,7 @@ function CorretoresSection() {
                 <th className="px-3 py-2">Email</th>
                 <th className="px-3 py-2">Posição</th>
                 <th className="px-3 py-2">Ativo</th>
+                <th className="px-3 py-2 w-12" aria-label="Ações" />
               </tr>
             </thead>
             <tbody>
@@ -175,6 +191,17 @@ function CorretoresSection() {
                           c.ativo ? "translate-x-5" : "translate-x-0.5",
                         )}
                       />
+                    </button>
+                  </td>
+                  <td className="px-3 py-3">
+                    <button
+                      type="button"
+                      onClick={() => removeCorretor(c)}
+                      className="rounded-md p-2 text-muted-foreground transition hover:bg-destructive/15 hover:text-destructive"
+                      title="Excluir corretor"
+                      aria-label={`Excluir corretor ${c.nome}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </td>
                 </tr>
@@ -232,16 +259,15 @@ function AddCorretorModal({
       .maybeSingle();
     const nextPos = (maxRow?.posicao_fila ?? 0) + 1;
 
-    const { error } = await supabase.from("users").insert({
-      nome,
-      email,
-      whatsapp,
-      tag_whatsapp: tag || null,
-      role: "corretor",
-      ativo: true,
-      pontuacao: 0,
-      posicao_fila: nextPos,
-    });
+    const { error } = await supabase.from("users").insert(
+      newCorretorRowPayload({
+        nome,
+        email,
+        whatsapp,
+        tag_whatsapp: tag || null,
+        posicao_fila: nextPos,
+      }),
+    );
 
     setSaving(false);
     if (error) {
@@ -377,7 +403,7 @@ function FilaSection() {
       .eq("role", "corretor")
       .eq("ativo", true)
       .order("posicao_fila", { ascending: true });
-    setList((data as AppUser[]) ?? []);
+    setList((data ?? []).map(mapUserRowToAppUser));
     setLoading(false);
   }
 

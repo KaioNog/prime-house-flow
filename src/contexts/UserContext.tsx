@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
+import { mapUserRowToAppUser } from "@/lib/userRow";
 import type { AppUser } from "@/types/db";
 
 const PREVIEW_USERS: Record<"gestor" | "corretor", AppUser> = {
@@ -47,44 +48,52 @@ function setPreviewMode(role: "gestor" | "corretor" | null) {
 interface UserContextValue {
   loading: boolean;
   user: AppUser | null;
-  refresh: () => Promise<void>;
-  enterPreview: (role?: "gestor" | "corretor") => void;
+  refresh: () => Promise<AppUser | null>;
   signOut: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextValue | undefined>(undefined);
 
 async function loadAppUser(email: string): Promise<AppUser | null> {
-  const { data, error } = await supabase.from("users").select("*").eq("email", email).maybeSingle();
+  const normalized = email.trim();
+  const { data, error } = await supabase
+    .from("users")
+    .select("*")
+    .ilike("email", normalized)
+    .limit(1);
   if (error) {
     // eslint-disable-next-line no-console
     console.error("Falha ao carregar usuário:", error.message);
     return null;
   }
-  return (data as AppUser) ?? null;
+  const row = data?.[0];
+  if (!row) return null;
+  return mapUserRowToAppUser(row);
 }
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<AppUser | null>(null);
 
-  const sync = async () => {
+  const sync = async (): Promise<AppUser | null> => {
     const previewRole = getPreviewRole();
     if (previewRole) {
-      setUser(PREVIEW_USERS[previewRole]);
+      const u = PREVIEW_USERS[previewRole];
+      setUser(u);
       setLoading(false);
-      return;
+      return u;
     }
     const { data } = await supabase.auth.getSession();
     const email = data.session?.user.email;
     if (!email) {
       setUser(null);
       setLoading(false);
-      return;
+      return null;
     }
     const appUser = await loadAppUser(email);
     setUser(appUser);
     setLoading(false);
+    return appUser;
   };
 
   useEffect(() => {
@@ -106,11 +115,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     loading,
     user,
     refresh: sync,
-    enterPreview: (role: "gestor" | "corretor" = "gestor") => {
-      setPreviewMode(role);
-      setUser(PREVIEW_USERS[role]);
-      setLoading(false);
-    },
     signOut: async () => {
       setPreviewMode(null);
       await supabase.auth.signOut();

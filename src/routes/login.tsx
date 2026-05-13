@@ -11,16 +11,10 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { refresh, enterPreview } = useUser();
+  const { refresh } = useUser();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
-
-  function handlePreviewAccess(role: "gestor" | "corretor") {
-    enterPreview(role);
-    toast.success(`Visualizando como ${role === "gestor" ? "gestor" : "corretor"}.`);
-    navigate({ to: "/home" });
-  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -39,8 +33,17 @@ function LoginPage() {
       setLoading(false);
       return;
     }
-    await refresh();
+    const appUser = await refresh();
+    if (!appUser) {
+      await supabase.auth.signOut();
+      toast.error(
+        "Este email não está cadastrado no CRM ou não pôde ser carregado. Peça ao gestor para cadastrar seu usuário na tabela de corretores.",
+      );
+      setLoading(false);
+      return;
+    }
     toast.success("Bem-vindo!");
+    setLoading(false);
     navigate({ to: "/home" });
   }
 
@@ -95,20 +98,6 @@ function LoginPage() {
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               Entrar
-            </button>
-            <button
-              type="button"
-              onClick={() => handlePreviewAccess("gestor")}
-              className="inline-flex w-full items-center justify-center rounded-lg border border-border bg-secondary px-4 py-2.5 text-sm font-semibold text-secondary-foreground transition hover:bg-accent"
-            >
-              Ver dashboard como gestor
-            </button>
-            <button
-              type="button"
-              onClick={() => handlePreviewAccess("corretor")}
-              className="inline-flex w-full items-center justify-center rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-accent"
-            >
-              Ver dashboard como corretor
             </button>
           </div>
         </form>

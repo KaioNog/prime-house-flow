@@ -3,6 +3,7 @@ export type UserRole = "corretor" | "gestor";
 
 export interface AppUser {
   id: string;
+  /** Nome de exibição; no Supabase a coluna costuma ser `corretor_nome`. */
   nome: string;
   email: string;
   whatsapp?: string | null;
@@ -31,6 +32,8 @@ export interface Lead {
   origem: LeadOrigem | string;
   status: LeadStatus | string;
   corretor_id: string | null;
+  /** Nome do corretor responsável (coluna no Supabase; pode redundar com users). */
+  corretor_nome?: string | null;
   empreendimento_id: string | null;
   numero_unidade?: string | null;
   conversa_resumo?: string | null;

@@ -13,7 +13,9 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppHomeRouteImport } from './routes/_app.home'
+import { Route as AppFollowupRouteImport } from './routes/_app.followup'
 import { Route as AppEmpreendimentosRouteImport } from './routes/_app.empreendimentos'
+import { Route as AppDisparosRouteImport } from './routes/_app.disparos'
 import { Route as AppCrmRouteImport } from './routes/_app.crm'
 import { Route as AppConfigRouteImport } from './routes/_app.config'
 
@@ -36,9 +38,19 @@ const AppHomeRoute = AppHomeRouteImport.update({
   path: '/home',
   getParentRoute: () => AppRoute,
 } as any)
+const AppFollowupRoute = AppFollowupRouteImport.update({
+  id: '/followup',
+  path: '/followup',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppEmpreendimentosRoute = AppEmpreendimentosRouteImport.update({
   id: '/empreendimentos',
   path: '/empreendimentos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDisparosRoute = AppDisparosRouteImport.update({
+  id: '/disparos',
+  path: '/disparos',
   getParentRoute: () => AppRoute,
 } as any)
 const AppCrmRoute = AppCrmRouteImport.update({
@@ -57,7 +69,9 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/config': typeof AppConfigRoute
   '/crm': typeof AppCrmRoute
+  '/disparos': typeof AppDisparosRoute
   '/empreendimentos': typeof AppEmpreendimentosRoute
+  '/followup': typeof AppFollowupRoute
   '/home': typeof AppHomeRoute
 }
 export interface FileRoutesByTo {
@@ -65,7 +79,9 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/config': typeof AppConfigRoute
   '/crm': typeof AppCrmRoute
+  '/disparos': typeof AppDisparosRoute
   '/empreendimentos': typeof AppEmpreendimentosRoute
+  '/followup': typeof AppFollowupRoute
   '/home': typeof AppHomeRoute
 }
 export interface FileRoutesById {
@@ -75,14 +91,32 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/config': typeof AppConfigRoute
   '/_app/crm': typeof AppCrmRoute
+  '/_app/disparos': typeof AppDisparosRoute
   '/_app/empreendimentos': typeof AppEmpreendimentosRoute
+  '/_app/followup': typeof AppFollowupRoute
   '/_app/home': typeof AppHomeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/config' | '/crm' | '/empreendimentos' | '/home'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/config'
+    | '/crm'
+    | '/disparos'
+    | '/empreendimentos'
+    | '/followup'
+    | '/home'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/config' | '/crm' | '/empreendimentos' | '/home'
+  to:
+    | '/'
+    | '/login'
+    | '/config'
+    | '/crm'
+    | '/disparos'
+    | '/empreendimentos'
+    | '/followup'
+    | '/home'
   id:
     | '__root__'
     | '/'
@@ -90,7 +124,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/_app/config'
     | '/_app/crm'
+    | '/_app/disparos'
     | '/_app/empreendimentos'
+    | '/_app/followup'
     | '/_app/home'
   fileRoutesById: FileRoutesById
 }
@@ -130,11 +166,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppHomeRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/followup': {
+      id: '/_app/followup'
+      path: '/followup'
+      fullPath: '/followup'
+      preLoaderRoute: typeof AppFollowupRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/empreendimentos': {
       id: '/_app/empreendimentos'
       path: '/empreendimentos'
       fullPath: '/empreendimentos'
       preLoaderRoute: typeof AppEmpreendimentosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/disparos': {
+      id: '/_app/disparos'
+      path: '/disparos'
+      fullPath: '/disparos'
+      preLoaderRoute: typeof AppDisparosRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/crm': {
@@ -157,14 +207,18 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppConfigRoute: typeof AppConfigRoute
   AppCrmRoute: typeof AppCrmRoute
+  AppDisparosRoute: typeof AppDisparosRoute
   AppEmpreendimentosRoute: typeof AppEmpreendimentosRoute
+  AppFollowupRoute: typeof AppFollowupRoute
   AppHomeRoute: typeof AppHomeRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppConfigRoute: AppConfigRoute,
   AppCrmRoute: AppCrmRoute,
+  AppDisparosRoute: AppDisparosRoute,
   AppEmpreendimentosRoute: AppEmpreendimentosRoute,
+  AppFollowupRoute: AppFollowupRoute,
   AppHomeRoute: AppHomeRoute,
 }
 
@@ -178,3 +232,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
