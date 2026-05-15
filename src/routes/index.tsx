@@ -312,6 +312,7 @@ function LandingPage() {
           </Link>
         </div>
       </section>
+      </main>
 
       {/* Footer */}
       <footer className="border-t border-border/60 bg-background">
