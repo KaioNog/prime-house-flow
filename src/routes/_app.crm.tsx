@@ -488,6 +488,7 @@ function CRMPage() {
       {openLead && (
         <LeadDrawer
           lead={openLead}
+          actorUserId={user?.id ?? ""}
           empreendimentos={empreendimentos}
           corretorNome={leadCorretorDisplay(openLead, corMap)}
           isPreview={isPreview}
@@ -634,6 +635,7 @@ function LeadCard({
 
 function LeadDrawer({
   lead,
+  actorUserId,
   empreendimentos,
   corretorNome,
   isPreview,
@@ -641,6 +643,8 @@ function LeadDrawer({
   onUpdated,
 }: {
   lead: Lead;
+  /** Usuário logado (public.users.id). RLS de tarefas exige corretor_id = current_user_id(). */
+  actorUserId: string;
   empreendimentos: Empreendimento[];
   corretorNome: string;
   isPreview: boolean;
@@ -711,9 +715,10 @@ function LeadDrawer({
   async function addTarefa() {
     const titulo = novaTarefa.trim();
     if (!titulo) return;
+    const taskOwnerId = lead.corretor_id ?? actorUserId;
     const novo: Tarefa = {
       id: newPreviewId("tarefa"),
-      corretor_id: lead.corretor_id,
+      corretor_id: taskOwnerId,
       lead_id: lead.id,
       titulo,
       descricao: null,
@@ -726,10 +731,14 @@ function LeadDrawer({
       setNovaTarefa("");
       return;
     }
+    if (!taskOwnerId) {
+      toast.error("Sessão inválida. Faça login novamente.");
+      return;
+    }
     const { data, error } = await supabase
       .from("tarefas")
       .insert({
-        corretor_id: lead.corretor_id,
+        corretor_id: taskOwnerId,
         lead_id: lead.id,
         titulo,
         concluida: false,
