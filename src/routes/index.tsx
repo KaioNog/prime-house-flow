@@ -28,20 +28,25 @@ function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <style>{`
-        @keyframes scanY {
-          0%, 100% { transform: translateY(0); opacity: 0.9; }
-          50% { transform: translateY(260px); opacity: 1; }
-        }
         @keyframes goldPulse {
           0%, 100% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.55), 0 0 24px rgba(201, 168, 76, 0.25); }
           50% { box-shadow: 0 0 0 12px rgba(201, 168, 76, 0), 0 0 36px rgba(201, 168, 76, 0.45); }
         }
-        .scan-line { animation: scanY 3.2s ease-in-out infinite; }
         .gold-pulse { animation: goldPulse 2.4s ease-in-out infinite; }
         @media (prefers-reduced-motion: reduce) {
-          .scan-line, .gold-pulse { animation: none; }
+          .gold-pulse { animation: none; }
+          .blueprint-svg * { animation: none !important; }
         }
+        .skip-link {
+          position: absolute; left: -9999px; top: 0; z-index: 100;
+          background: var(--color-gold); color: var(--color-gold-foreground);
+          padding: 0.75rem 1rem; border-radius: 0 0 0.5rem 0;
+          font-weight: 600;
+        }
+        .skip-link:focus { left: 0; }
       `}</style>
+
+      <a href="#main-content" className="skip-link">Pular para o conteúdo</a>
 
       {/* Header */}
       <header className="border-b border-border/60">
