@@ -28,20 +28,25 @@ function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <style>{`
-        @keyframes scanY {
-          0%, 100% { transform: translateY(0); opacity: 0.9; }
-          50% { transform: translateY(260px); opacity: 1; }
-        }
         @keyframes goldPulse {
           0%, 100% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.55), 0 0 24px rgba(201, 168, 76, 0.25); }
           50% { box-shadow: 0 0 0 12px rgba(201, 168, 76, 0), 0 0 36px rgba(201, 168, 76, 0.45); }
         }
-        .scan-line { animation: scanY 3.2s ease-in-out infinite; }
         .gold-pulse { animation: goldPulse 2.4s ease-in-out infinite; }
         @media (prefers-reduced-motion: reduce) {
-          .scan-line, .gold-pulse { animation: none; }
+          .gold-pulse { animation: none; }
+          .blueprint-svg * { animation: none !important; }
         }
+        .skip-link {
+          position: absolute; left: -9999px; top: 0; z-index: 100;
+          background: var(--color-gold); color: var(--color-gold-foreground);
+          padding: 0.75rem 1rem; border-radius: 0 0 0.5rem 0;
+          font-weight: 600;
+        }
+        .skip-link:focus { left: 0; }
       `}</style>
+
+      <a href="#main-content" className="skip-link">Pular para o conteúdo</a>
 
       {/* Header */}
       <header className="border-b border-border/60">
@@ -56,20 +61,22 @@ function LandingPage() {
         </div>
       </header>
 
+      <main id="main-content">
       {/* Hero */}
       <section className="mx-auto grid max-w-6xl gap-12 px-6 py-16 md:py-24 lg:grid-cols-2 lg:items-center">
         <div>
           <h1 className="font-display text-4xl font-bold leading-tight md:text-5xl lg:text-6xl">
             O CRM que o <span className="text-gold">corretor merece</span>
           </h1>
-          <p className="mt-6 text-lg text-muted-foreground md:text-xl">
+          <p className="mt-6 text-lg text-foreground/80 md:text-xl">
             Pensado por corretores, para corretores. Gerencie leads, follow-ups e vendas em um só
             lugar — simples, rápido e eficiente.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
               to="/login"
-              className="gold-pulse inline-flex items-center justify-center rounded-md bg-gold px-6 py-3 font-semibold text-[var(--gold-foreground)] transition-transform hover:scale-[1.02]"
+              className="gold-pulse inline-flex min-h-11 items-center justify-center rounded-md bg-gold px-6 py-3 font-semibold text-[var(--gold-foreground)] transition-transform hover:scale-[1.02]"
+              aria-label="Acessar o painel do PrimeHouse CRM"
             >
               Acessar o CRM
             </Link>
@@ -77,74 +84,122 @@ function LandingPage() {
               href={`https://wa.me/${WHATSAPP_SUPORTE}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-6 py-3 font-medium text-foreground transition-colors hover:bg-accent"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border bg-card px-6 py-3 font-medium text-foreground transition-colors hover:bg-accent"
+              aria-label="Falar com o suporte pelo WhatsApp (abre em nova aba)"
             >
-              <MessageCircle className="h-4 w-4" />
+              <MessageCircle className="h-4 w-4" aria-hidden="true" />
               Falar com suporte
             </a>
           </div>
         </div>
 
-        {/* Blueprint animation */}
+        {/* Blueprint animation: scanner sobe revelando detalhes da planta */}
         <div className="relative mx-auto w-full max-w-md">
           <div className="relative overflow-hidden rounded-xl border border-gold/30 bg-card p-4 shadow-[var(--shadow-gold)]">
             <svg
               viewBox="0 0 400 320"
-              className="h-auto w-full"
+              className="blueprint-svg h-auto w-full"
               role="img"
-              aria-label="Blueprint de apartamento"
+              aria-label="Planta animada de um apartamento sendo revelada por um scanner"
             >
               <defs>
                 <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                  <path
-                    d="M 20 0 L 0 0 0 20"
-                    fill="none"
-                    stroke="rgba(201,168,76,0.12)"
-                    strokeWidth="0.5"
-                  />
+                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(201,168,76,0.12)" strokeWidth="0.5" />
                 </pattern>
+                <filter id="scanGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="2.5" result="b" />
+                  <feMerge>
+                    <feMergeNode in="b" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+                {/* Mask: white = visible. Sweeps from bottom to top revealing details. */}
+                <mask id="revealMask" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="320">
+                  <rect x="0" y="0" width="400" height="320" fill="black" />
+                  <rect x="0" y="320" width="400" height="0" fill="white">
+                    <animate attributeName="y" values="320;0;0;320" keyTimes="0;0.45;0.55;1" dur="5s" repeatCount="indefinite" />
+                    <animate attributeName="height" values="0;320;320;0" keyTimes="0;0.45;0.55;1" dur="5s" repeatCount="indefinite" />
+                  </rect>
+                </mask>
               </defs>
+
               <rect width="400" height="320" fill="url(#grid)" />
-              {/* Outer walls */}
-              <rect
-                x="20"
-                y="20"
-                width="360"
-                height="280"
-                fill="none"
-                stroke="#c9a84c"
-                strokeWidth="2.5"
-              />
-              {/* Inner walls */}
-              <line x1="180" y1="20" x2="180" y2="160" stroke="#c9a84c" strokeWidth="1.5" />
-              <line x1="20" y1="160" x2="260" y2="160" stroke="#c9a84c" strokeWidth="1.5" />
-              <line x1="260" y1="160" x2="260" y2="300" stroke="#c9a84c" strokeWidth="1.5" />
-              <line x1="180" y1="80" x2="380" y2="80" stroke="#c9a84c" strokeWidth="1.5" />
-              {/* Doors (arcs) */}
-              <path d="M 110 160 A 30 30 0 0 1 140 130" fill="none" stroke="#c9a84c" strokeWidth="1" />
-              <path d="M 260 230 A 25 25 0 0 1 285 255" fill="none" stroke="#c9a84c" strokeWidth="1" />
-              {/* Labels */}
-              <text x="80" y="95" fill="#c9a84c" fontSize="10" fontFamily="monospace">SALA</text>
-              <text x="240" y="55" fill="#c9a84c" fontSize="10" fontFamily="monospace">QUARTO 1</text>
-              <text x="240" y="125" fill="#c9a84c" fontSize="10" fontFamily="monospace">SUÍTE</text>
-              <text x="80" y="240" fill="#c9a84c" fontSize="10" fontFamily="monospace">COZINHA</text>
-              <text x="300" y="240" fill="#c9a84c" fontSize="10" fontFamily="monospace">VARANDA</text>
-              {/* Furniture hints */}
-              <rect x="40" y="180" width="60" height="30" fill="none" stroke="#c9a84c" strokeWidth="0.8" opacity="0.6" />
-              <circle cx="220" cy="220" r="14" fill="none" stroke="#c9a84c" strokeWidth="0.8" opacity="0.6" />
-              <rect x="200" y="35" width="50" height="30" fill="none" stroke="#c9a84c" strokeWidth="0.8" opacity="0.6" />
+
+              {/* Base layer: walls always faintly visible */}
+              <g stroke="#c9a84c" fill="none" opacity="0.45">
+                <rect x="20" y="20" width="360" height="280" strokeWidth="2.5" />
+                <line x1="180" y1="20" x2="180" y2="160" strokeWidth="1.5" />
+                <line x1="20" y1="160" x2="260" y2="160" strokeWidth="1.5" />
+                <line x1="260" y1="160" x2="260" y2="300" strokeWidth="1.5" />
+                <line x1="180" y1="80" x2="380" y2="80" strokeWidth="1.5" />
+              </g>
+
+              {/* Detail layer: revealed by scanner */}
+              <g mask="url(#revealMask)">
+                <g stroke="#e8c97a" fill="none">
+                  <rect x="20" y="20" width="360" height="280" strokeWidth="2.5" />
+                  <line x1="180" y1="20" x2="180" y2="160" strokeWidth="1.5" />
+                  <line x1="20" y1="160" x2="260" y2="160" strokeWidth="1.5" />
+                  <line x1="260" y1="160" x2="260" y2="300" strokeWidth="1.5" />
+                  <line x1="180" y1="80" x2="380" y2="80" strokeWidth="1.5" />
+                </g>
+                <path d="M 110 160 A 30 30 0 0 1 140 130" fill="none" stroke="#e8c97a" strokeWidth="1" />
+                <path d="M 260 230 A 25 25 0 0 1 285 255" fill="none" stroke="#e8c97a" strokeWidth="1" />
+                <g fill="#e8c97a" fontSize="10" fontFamily="ui-monospace, monospace">
+                  <text x="80" y="95">SALA</text>
+                  <text x="225" y="55">QUARTO 1</text>
+                  <text x="240" y="125">SUÍTE</text>
+                  <text x="60" y="240">COZINHA</text>
+                  <text x="295" y="240">VARANDA</text>
+                </g>
+                {/* Furniture details */}
+                <g stroke="#c9a84c" fill="none" strokeWidth="0.9">
+                  {/* Sofá */}
+                  <rect x="40" y="105" width="70" height="22" rx="3" />
+                  <line x1="40" y1="115" x2="110" y2="115" />
+                  {/* Mesa redonda */}
+                  <circle cx="140" cy="135" r="12" />
+                  <circle cx="140" cy="118" r="3" />
+                  <circle cx="140" cy="152" r="3" />
+                  <circle cx="123" cy="135" r="3" />
+                  <circle cx="157" cy="135" r="3" />
+                  {/* Cama casal (suíte) */}
+                  <rect x="295" y="95" width="70" height="50" rx="2" />
+                  <rect x="305" y="100" width="22" height="14" />
+                  <rect x="333" y="100" width="22" height="14" />
+                  {/* Cama solteiro (quarto 1) */}
+                  <rect x="200" y="30" width="40" height="40" rx="2" />
+                  <rect x="206" y="34" width="28" height="10" />
+                  {/* Cozinha: bancada + fogão */}
+                  <rect x="30" y="175" width="90" height="14" />
+                  <rect x="55" y="178" width="14" height="8" />
+                  <circle cx="59" cy="182" r="1.5" />
+                  <circle cx="65" cy="182" r="1.5" />
+                  {/* Mesa jantar */}
+                  <rect x="155" y="195" width="60" height="30" rx="2" />
+                  <line x1="155" y1="210" x2="215" y2="210" />
+                  {/* Varanda: poltrona + planta */}
+                  <rect x="285" y="200" width="30" height="22" rx="3" />
+                  <circle cx="345" cy="265" r="10" />
+                  <path d="M 345 255 L 345 275 M 338 260 L 352 270 M 352 260 L 338 270" />
+                </g>
+              </g>
+
+              {/* Scan beam (bottom -> top), glowing */}
+              <g filter="url(#scanGlow)" opacity="0.95">
+                <line x1="20" y1="320" x2="380" y2="320" stroke="#f0d78c" strokeWidth="2">
+                  <animate attributeName="y1" values="320;0;0;320" keyTimes="0;0.45;0.55;1" dur="5s" repeatCount="indefinite" />
+                  <animate attributeName="y2" values="320;0;0;320" keyTimes="0;0.45;0.55;1" dur="5s" repeatCount="indefinite" />
+                </line>
+                <line x1="20" y1="320" x2="380" y2="320" stroke="#fff6d4" strokeWidth="0.6">
+                  <animate attributeName="y1" values="320;0;0;320" keyTimes="0;0.45;0.55;1" dur="5s" repeatCount="indefinite" />
+                  <animate attributeName="y2" values="320;0;0;320" keyTimes="0;0.45;0.55;1" dur="5s" repeatCount="indefinite" />
+                </line>
+              </g>
             </svg>
-            {/* Scan line overlay */}
-            <div className="pointer-events-none absolute inset-x-4 top-4 h-[2px]">
-              <div
-                className="scan-line h-[2px] w-full"
-                style={{
-                  background:
-                    "linear-gradient(90deg, transparent, #c9a84c, transparent)",
-                  boxShadow: "0 0 12px #c9a84c, 0 0 24px rgba(201,168,76,0.6)",
-                }}
-              />
-            </div>
+            <span className="sr-only">
+              Animação decorativa: planta de apartamento sendo revelada por um scanner que sobe da base ao topo, exibindo móveis e ambientes.
+            </span>
           </div>
         </div>
       </section>
@@ -257,6 +312,7 @@ function LandingPage() {
           </Link>
         </div>
       </section>
+      </main>
 
       {/* Footer */}
       <footer className="border-t border-border/60 bg-background">
